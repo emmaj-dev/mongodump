@@ -1,0 +1,45 @@
+version: '3.1'
+
+services:
+  mongodb:
+    image: mongo:8.0.0 
+    restart: always
+    container_name: mongodb
+    ports:
+      - 27017:27017 # Maps the host machine's port 27017 to the MongoDB container's port 27017.
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mypassword
+    volumes:
+      - ./db_data/:/data/db/
+    networks:
+      - spark_network
+
+  spark-master:
+    image: bitnami/spark:3.1.3
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+    ports:
+      - "8080:8080"  # Spark UI
+      - "7077:7077"  # Spark master port
+    networks:
+      - spark_network
+
+  spark-worker:
+    image: bitnami/spark:3.1.3
+    container_name: spark-worker-1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+    depends_on:
+      - spark-master
+    ports:
+      - "8081:8081"  # Spark Worker UI
+    networks:
+      - spark_network
+    
+
+networks:
+  spark_network:
+    driver: bridge
